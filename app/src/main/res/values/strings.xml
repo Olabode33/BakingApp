@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Baking App</string>
+    <string name="recipe_details_ingredient_label">Ingredients</string>
+    <string name="button_next_label">Next</string>
+    <string name="internet_connection_required_msg">Cannot play video: No internet connection detected</string>
+    <string name="last_step_message">You have gotten to the last step!</string>
+    <string name="button_finish_label">Finish</string>
+    <string name="error_no_network">No internet connection!</string>
+</resources>
