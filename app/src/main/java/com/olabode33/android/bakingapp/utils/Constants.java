@@ -10,4 +10,6 @@ public class Constants {
     public static String EXTRA_RECIPE_STEP_KEY = "recipe_step_key";
     public static String EXTRA_RECIPE_NAME_KEY = "recipe_name_key";
     public static String EXTRA_RECIPE_INGREDIENT_KEY = "recipe_ingredient_key";
+    public static String EXTRA_VIDEO_PLAYBACK_POSITION_KEY = "video_playback_position";
+    public static String EXTRA_VIDEO_CURRENT_WINDOW_KEY = "video_current_window";
 }

@@ -62,6 +62,8 @@ public class RecipeStepFragment extends Fragment {
     private SimpleExoPlayer mPlayer;
     private Context mContext;
     private final String TAG = "RecipeStepFragment";
+    private int mCurrentWindow = 0;
+    private long mPlaybackPosition = 0;
 
     @BindView(R.id.ep_recipe_step_video)
     SimpleExoPlayerView mPlayView;
@@ -93,6 +95,8 @@ public class RecipeStepFragment extends Fragment {
         if(savedInstanceState != null){
             mPosition = savedInstanceState.getInt(Constants.EXTRA_RECIPE_STEP_POSITION_KEY);
             mRecipeStepList = Parcels.unwrap(savedInstanceState.getParcelable(Constants.EXTRA_RECIPE_STEP_KEY));
+            mPlaybackPosition = savedInstanceState.getLong(Constants.EXTRA_VIDEO_PLAYBACK_POSITION_KEY);
+            mCurrentWindow = savedInstanceState.getInt(Constants.EXTRA_VIDEO_CURRENT_WINDOW_KEY);
         }
 
         View rootView = inflater.inflate(R.layout.fragment_recipe_step_detail, container, false);
@@ -125,6 +129,8 @@ public class RecipeStepFragment extends Fragment {
         super.onSaveInstanceState(outState);
         outState.putInt(Constants.EXTRA_RECIPE_STEP_POSITION_KEY, mPosition);
         outState.putParcelable(Constants.EXTRA_RECIPE_STEP_KEY, Parcels.wrap(mRecipeStepList));
+        outState.putInt(Constants.EXTRA_VIDEO_CURRENT_WINDOW_KEY, mCurrentWindow);
+        outState.putLong(Constants.EXTRA_VIDEO_PLAYBACK_POSITION_KEY, mPlaybackPosition);
     }
 
     @Override
@@ -132,6 +138,38 @@ public class RecipeStepFragment extends Fragment {
         super.onActivityCreated(savedInstanceState);
         if(savedInstanceState != null) {
             mPosition = savedInstanceState.getInt(Constants.EXTRA_RECIPE_STEP_POSITION_KEY);
+            mPlaybackPosition = savedInstanceState.getLong(Constants.EXTRA_VIDEO_PLAYBACK_POSITION_KEY);
+            mCurrentWindow = savedInstanceState.getInt(Constants.EXTRA_VIDEO_CURRENT_WINDOW_KEY);
+        }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        displayVideoPlayer();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if(mPlayer == null){
+            displayVideoPlayer();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        releasePlayer();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        releasePlayer();
+        if(mVideoFullScreenDialog != null){
+            mVideoFullScreenDialog.dismiss();
+            mVideoFullScreenDialog = null;
         }
     }
 
@@ -147,18 +185,7 @@ public class RecipeStepFragment extends Fragment {
             mVideoPlayerFrameLayout.setVisibility(View.GONE);
 
         } else {
-            //Display video using Exoplayer
-            if(mPlayView.getVisibility() == View.GONE){
-                mVideoPlayerFrameLayout.setVisibility(View.VISIBLE);
-            }
-            mPlayView.setDefaultArtwork(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher));
-
-            if(NetworkUtils.isOnline(mContext)) {
-                initializePlayer(Uri.parse(mRecipeStep.get_videoURL()));
-            } else {
-                Toast toast = Toast.makeText(mContext, getString(R.string.internet_connection_required_msg), Toast.LENGTH_LONG);
-                toast.show();
-            }
+            displayVideoPlayer();
         }
         if (mRecipeStep.get_thumbnailURL().equals(null) || mRecipeStep.get_thumbnailURL().equals("") || mRecipeStep.get_thumbnailURL().equals(" ")) {
             mRecipeStepImageView.setVisibility(View.GONE);
@@ -168,8 +195,8 @@ public class RecipeStepFragment extends Fragment {
             }
             Picasso.get()
                     .load(mRecipeStep.get_thumbnailURL())
-                    .placeholder(R.mipmap.ic_launcher)
-                    .error(R.mipmap.ic_launcher_round)
+                    .placeholder(R.mipmap.ic_recipe_step)
+                    .error(R.mipmap.ic_recipe_step_round)
                     .into(mRecipeStepImageView);
         }
         mRecipeDescriptionTextView.setText(mRecipeStep.get_description());
@@ -185,6 +212,7 @@ public class RecipeStepFragment extends Fragment {
         MediaSource mediaSource = new ExtractorMediaSource(mediaUrl, new DefaultDataSourceFactory(mContext, userAgent), new DefaultExtractorsFactory(), null, null);
         mPlayer.prepare(mediaSource);
         mPlayer.setPlayWhenReady(true);
+        mPlayer.seekTo(mCurrentWindow, mPlaybackPosition);
         mPlayer.addListener(new ExoPlayer.EventListener() {
             @Override
             public void onTimelineChanged(Timeline timeline, Object manifest) {
@@ -222,10 +250,31 @@ public class RecipeStepFragment extends Fragment {
         });
     }
 
+    private void displayVideoPlayer() {
+        //Display video using Exoplayer
+        if(mPlayView.getVisibility() == View.GONE){
+            mVideoPlayerFrameLayout.setVisibility(View.VISIBLE);
+        }
+        mPlayView.setDefaultArtwork(BitmapFactory.decodeResource(getResources(), R.mipmap.ic_recipe_step));
+
+        if(NetworkUtils.isOnline(mContext)) {
+            if(mPlayer == null) {
+                initializePlayer(Uri.parse(mRecipeStep.get_videoURL()));
+            }
+        } else {
+            Toast toast = Toast.makeText(mContext, getString(R.string.internet_connection_required_msg), Toast.LENGTH_LONG);
+            toast.show();
+        }
+    }
+
     private void releasePlayer() {
-        mPlayer.stop();
-        mPlayer.release();
-        mPlayer = null;
+        if(mPlayer != null) {
+            mPlaybackPosition = mPlayer.getCurrentPosition();
+            mCurrentWindow = mPlayer.getCurrentWindowIndex();
+            mPlayer.stop();
+            mPlayer.release();
+            mPlayer = null;
+        }
     }
 
     private void initVideoFullScreen() {
@@ -252,5 +301,7 @@ public class RecipeStepFragment extends Fragment {
         mVideoPlayerFrameLayout.addView(mPlayView);
         mExoPlayerIsFullScreen = false;
         mVideoFullScreenDialog.dismiss();
+        mVideoFullScreenDialog = null;
+        releasePlayer();
     }
 }

@@ -122,6 +122,10 @@ public class RecipeMasterFragment extends Fragment {
 
         @Override
         protected void onPostExecute(String s) {
+            if(isCancelled()){
+                Toast.makeText(mView.getContext(), getString(R.string.error_no_network), Toast.LENGTH_SHORT).show();
+                return;
+            }
             mRecipeList = JsonUtil.parseRecipeListJson(s);
             populateUI();
         }

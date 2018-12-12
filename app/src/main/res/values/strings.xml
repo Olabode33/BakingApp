@@ -6,4 +6,6 @@
     <string name="last_step_message">You have gotten to the last step!</string>
     <string name="button_finish_label">Finish</string>
     <string name="error_no_network">No internet connection!</string>
+    <string name="appwidget_text">EXAMPLE</string>
+    <string name="add_widget">Add widget</string>
 </resources>
